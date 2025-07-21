@@ -1,0 +1,37 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build Gr4vy UIKit Sample App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          
+      - name: Install Dependencies
+        run: |
+          pod install
+          
+      - name: Build
+        run: |
+          # Get available simulators
+          device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
+          echo "Using device: $device"
+          
+          # Build the workspace with the correct scheme
+          xcodebuild build \
+            -workspace gr4vy-uikit.xcworkspace \
+            -scheme "Gr4vy UIKit Sample App" \
+            -destination "platform=iOS Simulator,name=$device" \
+            -configuration Debug
