@@ -162,7 +162,7 @@ guard let gr4vy = try? Gr4vy(
 - Xcode 16.0+
 - Swift 5.7+
 - CocoaPods for dependency management
-- Gr4vy Swift SDK (installed via CocoaPods from local path)
+- Gr4vy Swift SDK (installed via CocoaPods)
 
 ## Installation
 
