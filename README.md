@@ -1,6 +1,40 @@
-# Gr4vy Swift UIKit Sample App
+# UIKit Client App for Gr4vy Swift SDK
 
-A UIKit sample application demonstrating integration with the Gr4vy Swift SDK. This app provides a testing interface for the SDK endpoints with persistent configuration management using programmatic UI and completion handlers.
+<div align="left">
+    <img alt="Platforms" src="https://img.shields.io/badge/Platforms-iOS-yellowgreen?style=for-the-badge">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/gr4vy/gr4vy-uikit-client-app/ios.yml?branch=main&style=for-the-badge">
+</div>
+
+## Summary 
+
+A UIKit sample application demonstrating integration with the [Gr4vy Swift SDK](https://github.com/gr4vy/gr4vy-swift). This app provides a testing interface for the SDK endpoints with persistent configuration management using programmatic UI and completion handlers.
+
+- [Summary](#summary)
+- [Architecture](#architecture)
+- [App Structure](#app-structure)
+  - [Tab Navigation](#tab-navigation)
+  - [API Screens (4 Endpoints)](#api-screens-4-endpoints)
+- [Admin Panel](#admin-panel)
+  - [Core Configuration](#core-configuration)
+  - [How Configuration Works](#how-configuration-works)
+- [Key Features](#key-features)
+  - [Completion Handler Implementation](#completion-handler-implementation)
+  - [Programmatic UI](#programmatic-ui)
+  - [Error Handling](#error-handling)
+  - [Response Handling](#response-handling)
+  - [Data Persistence](#data-persistence)
+  - [Dynamic Forms](#dynamic-forms)
+- [Setup Instructions](#setup-instructions)
+  - [1. Dependencies](#1-dependencies)
+  - [2. Configure Admin Settings](#2-configure-admin-settings)
+  - [3. Test API Endpoints](#3-test-api-endpoints)
+  - [4. Development Usage](#4-development-usage)
+- [Customization](#customization)
+  - [Adding New Endpoints](#adding-new-endpoints)
+  - [Modifying UI](#modifying-ui)
+  - [SDK Integration](#sdk-integration)
+- [Requirements](#requirements)
+- [Installation](#installation)
 
 ## Architecture
 
