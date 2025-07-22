@@ -7,7 +7,7 @@
 
 ## Summary
 
-A UIKit sample application demonstrating integration with the [Gr4vy Swift SDK](https://github.com/gr4vy/gr4vy-swift). This app provides a testing interface for the SDK endpoints with persistent configuration management using programmatic UI and completion handlers. A seperate [client app for SwiftUI]((https://github.com/gr4vy/gr4vy-swift-client-app) is also available.
+A UIKit sample application demonstrating integration with the [Gr4vy Swift SDK](https://github.com/gr4vy/gr4vy-swift). This app provides a testing interface for the SDK endpoints with persistent configuration management using programmatic UI and completion handlers. A seperate [client app for SwiftUI](https://github.com/gr4vy/gr4vy-swift-client-app) is also available.
 
 - [Summary](#summary)
 - [Architecture](#architecture)
