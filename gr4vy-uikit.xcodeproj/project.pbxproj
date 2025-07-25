@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		20F451D7C30149C9FCAB93BF /* libPods-Gr4vy UIKit Sample App.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 983AF6FCE436F16B09AD7462 /* libPods-Gr4vy UIKit Sample App.a */; };
 		59313CCA2E2CD6CF00913569 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59313CC42E2CD6CF00913569 /* HomeViewController.swift */; };
 		59313CCB2E2CD6CF00913569 /* AdminViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59313CBE2E2CD6CF00913569 /* AdminViewController.swift */; };
 		59313CCC2E2CD6CF00913569 /* JSONResponseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59313CC52E2CD6CF00913569 /* JSONResponseViewController.swift */; };
@@ -18,14 +17,13 @@
 		59313CD12E2CD6CF00913569 /* PaymentOptionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59313CC72E2CD6CF00913569 /* PaymentOptionsViewController.swift */; };
 		59BCC8D12E2D88560078A509 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 59BCC8CF2E2D88560078A509 /* LaunchScreen.storyboard */; };
 		59BCC8D42E2D88680078A509 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 59BCC8D22E2D88680078A509 /* Main.storyboard */; };
+		59D1C6A12E33E52800F9CEDE /* gr4vy-swift in Frameworks */ = {isa = PBXBuildFile; productRef = 59D1C6A02E33E52800F9CEDE /* gr4vy-swift */; };
 		59FE69582722BBB2006C1C08 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE69572722BBB2006C1C08 /* AppDelegate.swift */; };
 		59FE695A2722BBB2006C1C08 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE69592722BBB2006C1C08 /* SceneDelegate.swift */; };
 		59FE69612722BBB3006C1C08 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 59FE69602722BBB3006C1C08 /* Assets.xcassets */; };
-
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		3A0ED0FB2D03320C039CD9A3 /* Pods-Gr4vy UIKit Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Gr4vy UIKit Sample App.release.xcconfig"; path = "Target Support Files/Pods-Gr4vy UIKit Sample App/Pods-Gr4vy UIKit Sample App.release.xcconfig"; sourceTree = "<group>"; };
 		592C4BD428C1059B00063AC7 /* Gr4vy UIKit Sample App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Gr4vy UIKit Sample App.entitlements"; sourceTree = "<group>"; };
 		59313CBE2E2CD6CF00913569 /* AdminViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminViewController.swift; sourceTree = "<group>"; };
 		59313CC22E2CD6CF00913569 /* CardDetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailsViewController.swift; sourceTree = "<group>"; };
@@ -41,10 +39,7 @@
 		59FE69572722BBB2006C1C08 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		59FE69592722BBB2006C1C08 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		59FE69602722BBB3006C1C08 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-
 		59FE69652722BBB3006C1C08 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		983AF6FCE436F16B09AD7462 /* libPods-Gr4vy UIKit Sample App.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Gr4vy UIKit Sample App.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		D1A85CBD8A3C372DD34F33C6 /* Pods-Gr4vy UIKit Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Gr4vy UIKit Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Gr4vy UIKit Sample App/Pods-Gr4vy UIKit Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,21 +47,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				20F451D7C30149C9FCAB93BF /* libPods-Gr4vy UIKit Sample App.a in Frameworks */,
+				59D1C6A12E33E52800F9CEDE /* gr4vy-swift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		356A97754945D886602A04A0 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				983AF6FCE436F16B09AD7462 /* libPods-Gr4vy UIKit Sample App.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		59313CC12E2CD6CF00913569 /* Base.lproj */ = {
 			isa = PBXGroup;
 			children = (
@@ -81,8 +68,6 @@
 			children = (
 				59FE69562722BBB2006C1C08 /* Gr4vy UIKit Sample App */,
 				5978B286271C7F1300F5CC00 /* Products */,
-				D70BC50B785672E0B2781CCC /* Pods */,
-				356A97754945D886602A04A0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -110,19 +95,9 @@
 				59FE69572722BBB2006C1C08 /* AppDelegate.swift */,
 				59FE69592722BBB2006C1C08 /* SceneDelegate.swift */,
 				59FE69602722BBB3006C1C08 /* Assets.xcassets */,
-
 				59FE69652722BBB3006C1C08 /* Info.plist */,
 			);
 			path = "Gr4vy UIKit Sample App";
-			sourceTree = "<group>";
-		};
-		D70BC50B785672E0B2781CCC /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				D1A85CBD8A3C372DD34F33C6 /* Pods-Gr4vy UIKit Sample App.debug.xcconfig */,
-				3A0ED0FB2D03320C039CD9A3 /* Pods-Gr4vy UIKit Sample App.release.xcconfig */,
-			);
-			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -132,7 +107,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 59FE69662722BBB3006C1C08 /* Build configuration list for PBXNativeTarget "Gr4vy UIKit Sample App" */;
 			buildPhases = (
-				50273E0815FBDB5D3F27C4E1 /* [CP] Check Pods Manifest.lock */,
 				59FE69512722BBB2006C1C08 /* Sources */,
 				59FE69522722BBB2006C1C08 /* Frameworks */,
 				59FE69532722BBB2006C1C08 /* Resources */,
@@ -170,6 +144,9 @@
 				Base,
 			);
 			mainGroup = 5978B27B271C7F1300F5CC00;
+			packageReferences = (
+				59D1C69F2E33E52800F9CEDE /* XCRemoteSwiftPackageReference "gr4vy-swift" */,
+			);
 			productRefGroup = 5978B286271C7F1300F5CC00 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -185,38 +162,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				59BCC8D12E2D88560078A509 /* LaunchScreen.storyboard in Resources */,
-
 				59FE69612722BBB3006C1C08 /* Assets.xcassets in Resources */,
 				59BCC8D42E2D88680078A509 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		50273E0815FBDB5D3F27C4E1 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Gr4vy UIKit Sample App-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		59FE69512722BBB2006C1C08 /* Sources */ = {
@@ -255,7 +206,6 @@
 			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
-
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -387,7 +337,6 @@
 		};
 		59FE69672722BBB3006C1C08 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D1A85CBD8A3C372DD34F33C6 /* Pods-Gr4vy UIKit Sample App.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -417,7 +366,6 @@
 		};
 		59FE69682722BBB3006C1C08 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3A0ED0FB2D03320C039CD9A3 /* Pods-Gr4vy UIKit Sample App.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -467,6 +415,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		59D1C69F2E33E52800F9CEDE /* XCRemoteSwiftPackageReference "gr4vy-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gr4vy/gr4vy-swift";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		59D1C6A02E33E52800F9CEDE /* gr4vy-swift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 59D1C69F2E33E52800F9CEDE /* XCRemoteSwiftPackageReference "gr4vy-swift" */;
+			productName = "gr4vy-swift";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5978B27C271C7F1300F5CC00 /* Project object */;
 }

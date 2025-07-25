@@ -10,7 +10,6 @@ import UIKit
 class JSONResponseViewController: UIViewController {
     
     private let textView = UITextView()
-    private let scrollView = UIScrollView()
     
     var responseData: Data?
     var errorStatusCode: Int?
@@ -18,6 +17,10 @@ class JSONResponseViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         displayResponse()
     }
     
@@ -32,13 +35,10 @@ class JSONResponseViewController: UIViewController {
             action: #selector(shareButtonTapped)
         )
         
-        // Configure scroll view
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(scrollView)
-        
         // Configure text view
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.isEditable = false
+        textView.isScrollEnabled = true
         textView.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .regular)
         textView.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         
@@ -51,21 +51,14 @@ class JSONResponseViewController: UIViewController {
             textView.textColor = UIColor.label
         }
         
-        scrollView.addSubview(textView)
+        view.addSubview(textView)
         
         NSLayoutConstraint.activate([
-            // Scroll view constraints
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            // Text view constraints
-            textView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            textView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            textView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            textView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            textView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+            // Text view constraints - fill the entire safe area
+            textView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            textView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            textView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
         // Add tap gesture to copy on tap
@@ -76,6 +69,12 @@ class JSONResponseViewController: UIViewController {
     private func displayResponse() {
         guard let responseData = responseData else {
             textView.text = "No response data"
+            return
+        }
+        
+        // Handle empty response (e.g., 204 No Content)
+        if responseData.isEmpty {
+            textView.text = "Request completed successfully.\n\nNo response body (empty response)."
             return
         }
         
@@ -92,6 +91,9 @@ class JSONResponseViewController: UIViewController {
                 
                 displayText += prettyString
                 textView.text = displayText
+                
+            } else {
+                textView.text = "Unable to convert response to string"
             }
         } catch {
             if let rawString = String(data: responseData, encoding: .utf8) {
@@ -101,15 +103,17 @@ class JSONResponseViewController: UIViewController {
                     displayText += "HTTP Status: \(statusCode)\n\n"
                 }
                 
-                displayText += rawString
+                displayText += rawString.isEmpty ? "Request completed successfully.\n\nEmpty response body." : rawString
                 textView.text = displayText
             } else {
                 textView.text = "Unable to decode response data"
             }
         }
         
-        // Adjust content size
-        textView.sizeToFit()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.view.layoutIfNeeded()
+        }
     }
     
     @objc private func shareButtonTapped() {

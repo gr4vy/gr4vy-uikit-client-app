@@ -21,7 +21,7 @@ class HomeViewController: UIViewController {
     }
     
     private func setupUI() {
-        title = "Gr4vy Native SDK"
+        title = "Gr4vy Native UIKit"
         navigationController?.navigationBar.prefersLargeTitles = true
         view.backgroundColor = UIColor.systemBackground
         
