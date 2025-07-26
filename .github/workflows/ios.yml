@@ -21,9 +21,9 @@ jobs:
           device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
           echo "Using device: $device"
           
-          # Build the workspace with the correct scheme
+          # Build the project with the correct scheme
           xcodebuild build \
-            -workspace gr4vy-uikit.xcworkspace \
+            -project gr4vy-uikit.xcodeproj \
             -scheme "Gr4vy UIKit Sample App" \
             -destination "platform=iOS Simulator,name=$device" \
             -configuration Debug
