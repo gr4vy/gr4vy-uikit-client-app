@@ -34,7 +34,7 @@ class AdminViewController: UIViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(TextFieldTableViewCell.self, forCellReuseIdentifier: "TextFieldCell")
+        tableView.register(AdminTextFieldTableViewCell.self, forCellReuseIdentifier: "TextFieldCell")
         tableView.register(SegmentedControlTableViewCell.self, forCellReuseIdentifier: "SegmentedControlCell")
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ButtonCell")
         
@@ -146,15 +146,15 @@ extension AdminViewController: UITableViewDataSource, UITableViewDelegate {
         if indexPath.section == 0 {
             switch indexPath.row {
             case 0:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! TextFieldTableViewCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! AdminTextFieldTableViewCell
                 cell.configure(with: merchantIdTextField)
                 return cell
             case 1:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! TextFieldTableViewCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! AdminTextFieldTableViewCell
                 cell.configure(with: gr4vyIdTextField)
                 return cell
             case 2:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! TextFieldTableViewCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! AdminTextFieldTableViewCell
                 cell.configure(with: tokenTextField)
                 return cell
             case 3:
@@ -162,7 +162,7 @@ extension AdminViewController: UITableViewDataSource, UITableViewDelegate {
                 cell.configure(with: serverSegmentedControl, title: "server")
                 return cell
             case 4:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! TextFieldTableViewCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! AdminTextFieldTableViewCell
                 cell.configure(with: timeoutTextField)
                 return cell
             default:
@@ -191,7 +191,7 @@ extension AdminViewController: UITableViewDataSource, UITableViewDelegate {
 
 // MARK: - Custom Table View Cells
 
-class TextFieldTableViewCell: UITableViewCell {
+class AdminTextFieldTableViewCell: UITableViewCell {
     private var textField: UITextField?
     
     func configure(with textField: UITextField) {

@@ -17,14 +17,20 @@ class PaymentMethodsViewController: UIViewController {
     
     // Form fields
     private let buyerIdTextField = UITextField()
-    private let externalIdentifierTextField = UITextField()
-    private let limitTextField = UITextField()
-    private let sortTextField = UITextField()
-    private let createdAfterTextField = UITextField()
-    private let createdBeforeTextField = UITextField()
+    private let buyerExternalIdentifierTextField = UITextField()
+    private let sortByTextField = UITextField()
+    private let orderByTextField = UITextField()
+    private let countryTextField = UITextField()
+    private let currencyTextField = UITextField()
+    
+    // Picker data
+    private var sortByOptions: [Gr4vySortBy?] = [nil] + Gr4vySortBy.allCases
+    private let orderByOptions = ["desc", "asc"]
     
     // State
     private var isLoading = false
+    private var selectedSortBy: Gr4vySortBy?
+    private var selectedOrderBy: String = "desc"
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,7 +57,7 @@ class PaymentMethodsViewController: UIViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(TextFieldTableViewCell.self, forCellReuseIdentifier: "TextFieldCell")
+        tableView.register(PaymentMethodsTextFieldTableViewCell.self, forCellReuseIdentifier: "TextFieldCell")
         
         view.addSubview(tableView)
         
@@ -111,34 +117,73 @@ class PaymentMethodsViewController: UIViewController {
         buyerIdTextField.autocorrectionType = .no
         buyerIdTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         
-        externalIdentifierTextField.placeholder = "external_identifier"
-        externalIdentifierTextField.autocapitalizationType = .none
-        externalIdentifierTextField.autocorrectionType = .no
-        externalIdentifierTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        buyerExternalIdentifierTextField.placeholder = "buyer_external_identifier"
+        buyerExternalIdentifierTextField.autocapitalizationType = .none
+        buyerExternalIdentifierTextField.autocorrectionType = .no
+        buyerExternalIdentifierTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         
-        limitTextField.placeholder = "limit"
-        limitTextField.keyboardType = .numberPad
-        limitTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        // Sort By field with picker
+        sortByTextField.placeholder = "sort_by"
+        sortByTextField.autocapitalizationType = .none
+        sortByTextField.autocorrectionType = .no
+        setupPickerForTextField(sortByTextField, tag: 1)
         
-        sortTextField.placeholder = "sort"
-        sortTextField.autocapitalizationType = .none
-        sortTextField.autocorrectionType = .no
-        sortTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        // Order By field with picker
+        orderByTextField.placeholder = "order_by"
+        orderByTextField.autocapitalizationType = .none
+        orderByTextField.autocorrectionType = .no
+        setupPickerForTextField(orderByTextField, tag: 2)
         
-        createdAfterTextField.placeholder = "created_after (YYYY-MM-DD)"
-        createdAfterTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        countryTextField.placeholder = "country"
+        countryTextField.autocapitalizationType = .none
+        countryTextField.autocorrectionType = .no
+        countryTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         
-        createdBeforeTextField.placeholder = "created_before (YYYY-MM-DD)"
-        createdBeforeTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        currencyTextField.placeholder = "currency"
+        currencyTextField.autocapitalizationType = .none
+        currencyTextField.autocorrectionType = .no
+        currencyTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+    }
+    
+    private func setupPickerForTextField(_ textField: UITextField, tag: Int) {
+        let pickerView = UIPickerView()
+        pickerView.tag = tag
+        pickerView.delegate = self
+        pickerView.dataSource = self
+        textField.inputView = pickerView
+        
+        // Add toolbar with Done button
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissPicker))
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        toolbar.items = [flexSpace, doneButton]
+        textField.inputAccessoryView = toolbar
+    }
+    
+    @objc private func dismissPicker() {
+        view.endEditing(true)
     }
     
     private func loadSavedData() {
         buyerIdTextField.text = UserDefaults.standard.string(forKey: "payment_methods_buyer_id") ?? ""
-        externalIdentifierTextField.text = UserDefaults.standard.string(forKey: "payment_methods_external_identifier") ?? ""
-        limitTextField.text = UserDefaults.standard.string(forKey: "payment_methods_limit") ?? ""
-        sortTextField.text = UserDefaults.standard.string(forKey: "payment_methods_sort") ?? ""
-        createdAfterTextField.text = UserDefaults.standard.string(forKey: "payment_methods_created_after") ?? ""
-        createdBeforeTextField.text = UserDefaults.standard.string(forKey: "payment_methods_created_before") ?? ""
+        buyerExternalIdentifierTextField.text = UserDefaults.standard.string(forKey: "payment_methods_buyer_external_identifier") ?? ""
+        
+        // Load sort_by
+        if let sortByRawValue = UserDefaults.standard.string(forKey: "payment_methods_sort_by") {
+            selectedSortBy = Gr4vySortBy(rawValue: sortByRawValue)
+            sortByTextField.text = selectedSortBy?.rawValue ?? ""
+        } else {
+            selectedSortBy = nil
+            sortByTextField.text = "None"
+        }
+        
+        // Load order_by
+        selectedOrderBy = UserDefaults.standard.string(forKey: "payment_methods_order_by") ?? "desc"
+        orderByTextField.text = selectedOrderBy
+        
+        countryTextField.text = UserDefaults.standard.string(forKey: "payment_methods_country") ?? ""
+        currencyTextField.text = UserDefaults.standard.string(forKey: "payment_methods_currency") ?? ""
     }
     
     @objc private func textFieldDidChange(_ textField: UITextField) {
@@ -146,17 +191,13 @@ class PaymentMethodsViewController: UIViewController {
         
         switch textField {
         case buyerIdTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_buyer_id")
-        case externalIdentifierTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_external_identifier")
-        case limitTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_limit")
-        case sortTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_sort")
-        case createdAfterTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_created_after")
-        case createdBeforeTextField:
-            UserDefaults.standard.set(value, forKey: "payment_methods_created_before")
+            UserDefaults.standard.set(value.isEmpty ? nil : value, forKey: "payment_methods_buyer_id")
+        case buyerExternalIdentifierTextField:
+            UserDefaults.standard.set(value.isEmpty ? nil : value, forKey: "payment_methods_buyer_external_identifier")
+        case countryTextField:
+            UserDefaults.standard.set(value.isEmpty ? nil : value, forKey: "payment_methods_country")
+        case currencyTextField:
+            UserDefaults.standard.set(value.isEmpty ? nil : value, forKey: "payment_methods_currency")
         default:
             break
         }
@@ -178,48 +219,55 @@ class PaymentMethodsViewController: UIViewController {
         let serverEnvironment = UserDefaults.standard.string(forKey: "serverEnvironment") ?? "sandbox"
         let timeoutString = UserDefaults.standard.string(forKey: "timeout") ?? ""
         
-        let server: Gr4vyServer = serverEnvironment == "production" ? .production : .sandbox
-        let timeoutInterval = TimeInterval(Double(timeoutString) ?? 30.0)
+        guard !gr4vyID.isEmpty else {
+            showError("Please configure Gr4vy ID in Admin settings")
+            return
+        }
         
-        guard let gr4vy = try? Gr4vy(
-            gr4vyId: gr4vyID,
-            token: token,
-            server: server,
-            timeout: timeoutInterval
-        ) else {
+        guard !token.isEmpty else {
+            showError("Please configure API Token in Admin settings")
+            return
+        }
+        
+        let server: Gr4vyServer = serverEnvironment == "production" ? .production : .sandbox
+        
+        let gr4vy: Gr4vy?
+        if let timeoutValue = Double(timeoutString.trimmingCharacters(in: .whitespacesAndNewlines)), 
+           timeoutValue > 0, 
+           !timeoutString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let timeoutInterval = TimeInterval(timeoutValue)
+            gr4vy = try? Gr4vy(
+                gr4vyId: gr4vyID,
+                token: token,
+                server: server,
+                timeout: timeoutInterval
+            )
+        } else {
+            gr4vy = try? Gr4vy(
+                gr4vyId: gr4vyID,
+                token: token,
+                server: server
+            )
+        }
+        
+        guard let gr4vy = gr4vy else {
             showError("Failed to configure Gr4vy SDK")
             return
         }
         
-        let buyerId = buyerIdTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let externalIdentifier = externalIdentifierTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let limit = limitTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sort = sortTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let createdAfter = createdAfterTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let createdBefore = createdBeforeTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Create date formatter for date parsing
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
-        var createdAfterDate: Date?
-        var createdBeforeDate: Date?
-        
-        if let createdAfter = createdAfter, !createdAfter.isEmpty {
-            createdAfterDate = dateFormatter.date(from: createdAfter)
-        }
-        
-        if let createdBefore = createdBefore, !createdBefore.isEmpty {
-            createdBeforeDate = dateFormatter.date(from: createdBefore)
-        }
+        // Prepare field values
+        let buyerId = buyerIdTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let buyerExtId = buyerExternalIdentifierTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let countryVal = countryTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currencyVal = currencyTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let paymentMethods = Gr4vyBuyersPaymentMethods(
-            buyerId: buyerId.isEmpty ? nil : buyerId,
-            buyerExternalIdentifier: externalIdentifier?.isEmpty == false ? externalIdentifier : nil,
-            sortBy: nil, // Not implemented in this form - would need Gr4vySortBy enum  
-            orderBy: Gr4vyOrderBy(rawValue: "desc"), // Default value
-            country: nil, // Not implemented in this form
-            currency: nil // Not implemented in this form
+            buyerId: buyerId?.isEmpty == false ? buyerId : nil,
+            buyerExternalIdentifier: buyerExtId?.isEmpty == false ? buyerExtId : nil,
+            sortBy: selectedSortBy,
+            orderBy: Gr4vyOrderBy(rawValue: selectedOrderBy),
+            country: countryVal?.isEmpty == false ? countryVal : nil,
+            currency: currencyVal?.isEmpty == false ? currencyVal : nil
         )
         
         let requestBody = Gr4vyBuyersPaymentMethodsRequest(
@@ -285,7 +333,7 @@ class PaymentMethodsViewController: UIViewController {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .cannotFindHost:
-                showError("Cannot find server. Please check your Merchant ID (\(gr4vyID)). The URL being called is: https://api.\(gr4vyID).gr4vy.app/buyers/{buyer_id}/payment-methods")
+                showError("Cannot find server. Please check your Merchant ID (\(gr4vyID)). The URL being called is: https://api.\(gr4vyID).gr4vy.app/payment-methods")
             case .notConnectedToInternet:
                 showError("No internet connection. Please check your network settings.")
             case .timedOut:
@@ -332,59 +380,120 @@ private struct AssociatedKeys {
     static var errorResponseViewController = "errorResponseViewController"
 }
 
+// MARK: - UIPickerView DataSource and Delegate
+extension PaymentMethodsViewController: UIPickerViewDataSource, UIPickerViewDelegate {
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        if pickerView.tag == 1 { // Sort By picker
+            return sortByOptions.count
+        } else { // Order By picker
+            return orderByOptions.count
+        }
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        if pickerView.tag == 1 { // Sort By picker
+            if let sortBy = sortByOptions[row] {
+                return sortBy.rawValue
+            } else {
+                return "None"
+            }
+        } else { // Order By picker
+            return orderByOptions[row]
+        }
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if pickerView.tag == 1 { // Sort By picker
+            selectedSortBy = sortByOptions[row]
+            if let sortBy = selectedSortBy {
+                sortByTextField.text = sortBy.rawValue
+                UserDefaults.standard.set(sortBy.rawValue, forKey: "payment_methods_sort_by")
+            } else {
+                sortByTextField.text = "None"
+                UserDefaults.standard.removeObject(forKey: "payment_methods_sort_by")
+            }
+        } else { // Order By picker
+            selectedOrderBy = orderByOptions[row]
+            orderByTextField.text = selectedOrderBy
+            UserDefaults.standard.set(selectedOrderBy, forKey: "payment_methods_order_by")
+        }
+    }
+}
+
 // MARK: - TableView DataSource and Delegate
 extension PaymentMethodsViewController: UITableViewDataSource, UITableViewDelegate {
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return 1
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        switch section {
-        case 0: return 2 // buyer_id, external_identifier
-        case 1: return 4 // limit, sort, created_after, created_before
-        default: return 0
-        }
+        return 6 // buyer_id, buyer_external_identifier, sort_by, order_by, country, currency
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        switch section {
-        case 0: return "Buyer Identification"
-        case 1: return "Filtering & Sorting"
-        default: return nil
-        }
+        return "Payment Methods Parameters"
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! TextFieldTableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! PaymentMethodsTextFieldTableViewCell
         
-        switch indexPath.section {
+        switch indexPath.row {
         case 0:
-            switch indexPath.row {
-            case 0:
-                cell.configure(with: buyerIdTextField)
-            case 1:
-                cell.configure(with: externalIdentifierTextField)
-            default:
-                break
-            }
+            cell.configure(with: buyerIdTextField)
         case 1:
-            switch indexPath.row {
-            case 0:
-                cell.configure(with: limitTextField)
-            case 1:
-                cell.configure(with: sortTextField)
-            case 2:
-                cell.configure(with: createdAfterTextField)
-            case 3:
-                cell.configure(with: createdBeforeTextField)
-            default:
-                break
-            }
+            cell.configure(with: buyerExternalIdentifierTextField)
+        case 2:
+            cell.configure(with: sortByTextField)
+        case 3:
+            cell.configure(with: orderByTextField)
+        case 4:
+            cell.configure(with: countryTextField)
+        case 5:
+            cell.configure(with: currencyTextField)
         default:
             break
         }
         
         return cell
+    }
+}
+
+// MARK: - Custom TextField Cell
+class PaymentMethodsTextFieldTableViewCell: UITableViewCell {
+    
+    private var textField: UITextField?
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupUI() {
+        selectionStyle = .none
+    }
+    
+    func configure(with textField: UITextField) {
+        self.textField = textField
+        
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(textField)
+        
+        NSLayoutConstraint.activate([
+            textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            textField.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            textField.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
+        ])
     }
 } 
