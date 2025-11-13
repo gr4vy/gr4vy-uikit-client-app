@@ -323,6 +323,10 @@ class PaymentMethodsViewController: UIViewController {
                 handleNetworkError(urlError, gr4vyID: gr4vyID)
             case .decodingError(let message):
                 showError("Decoding error: \(message)")
+            case .uiContextError(let message):
+                showError("UI error: \(message)")
+            case .threeDSError(let message):
+                showError("3DS error: \(message)")
             }
         } else {
             handleNetworkError(error, gr4vyID: gr4vyID)

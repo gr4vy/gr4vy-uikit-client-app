@@ -67,10 +67,13 @@ The app uses traditional UIKit patterns with completion handlers for API calls c
    - Sorting and filtering options with date inputs
    - Buyer identification by ID or external identifier
 
-4. **Fields (Tokenize)** - `PUT /tokenize`
-   - Tokenize payment methods (card, click-to-pay, or stored payment method ID)
-   - Segmented control for payment method type selection
-   - Dynamic form fields based on payment method type
+4. **Tokenize** - `PUT /tokenize`
+   - Tokenize payment methods (card or stored payment method ID)
+   - 3DS authentication support
+   - Test card selection for frictionless and challenge flows
+   - Customizable 3DS UI themes (light/dark mode support)
+   - SDK timeout configuration
+   - Secure payment method storage
 
 ## Admin Panel
 
@@ -92,6 +95,26 @@ The Admin tab provides centralized configuration for all API calls:
 - Switch between sandbox and production environments instantly
 
 ## Key Features
+
+### 3DS Authentication Support
+The Tokenize screen includes comprehensive 3DS authentication features:
+- **Authentication Toggle**: Enable/disable 3DS authentication
+- **Test Cards**: Pre-configured test cards for both flows:
+  - **Frictionless Flow**: Cards that complete authentication without challenge (Visa, Mastercard, Amex, Diners, JCB)
+  - **Challenge Flow**: Cards that trigger authentication challenge screens (Visa, Mastercard, Amex, Diners, JCB)
+- **UI Customization**: Three built-in themes for 3DS challenge screens:
+  - Red/Blue theme
+  - Orange/Purple theme
+  - Green/Yellow theme
+  - Each theme supports both light and dark modes
+- **Timeout Configuration**: Configurable SDK max timeout (in minutes)
+- **Enhanced Response Data**: Returns authentication details including:
+  - `tokenized`: Whether the payment method was successfully tokenized
+  - `authentication.attempted`: Whether 3DS authentication was attempted
+  - `authentication.user_cancelled`: Whether the user cancelled the authentication
+  - `authentication.timed_out`: Whether the authentication timed out
+  - `authentication.type`: The type of authentication performed
+  - `authentication.transaction_status`: The final status of the 3DS transaction
 
 ### Completion Handler Implementation
 
@@ -119,6 +142,9 @@ gr4vy.paymentOptions.list(request: requestBody) { result in
 
 ### Error Handling
 
+- SDK error type handling including 3DS-specific errors:
+  - `threeDSError`: 3DS authentication failures
+  - `uiContextError`: UI context-related issues
 - SDK error type handling with specific error cases
 - Network error detection and visual messages
 - HTTP status code display with detailed error responses
@@ -167,8 +193,9 @@ Open `gr4vy-uikit.xcworkspace` (not the .xcodeproj file) after running pod insta
 
 - Navigate through the **Home** tab to each API screen
 - Fill in required fields (validated with proper keyboard types)
+- **For Tokenize**: Select test cards for 3DS testing (frictionless or challenge flows), choose a theme, and configure authentication settings
 - Tap the action button (GET/POST/PUT) to make requests
-- View responses in the dedicated JSON response viewer
+- View responses with authentication details (for 3DS-enabled requests)
 
 ### 4. Development Usage
 
@@ -192,8 +219,48 @@ Open `gr4vy-uikit.xcworkspace` (not the .xcodeproj file) after running pod insta
 - Error states handled with red background styling
 - Loading states with `UIActivityIndicatorView`
 
+### 3DS UI Customization
+
+The app demonstrates comprehensive 3DS UI theming capabilities:
+
+```swift
+private func buildRedBlueTheme() -> Gr4vyThreeDSUiCustomizationMap {
+    let light = Gr4vyThreeDSUiCustomization(
+        label: .init(
+            textFontName: "HelveticaNeue",
+            textFontSize: 16,
+            textColorHex: "#1c1c1e",
+            headingTextFontName: "HelveticaNeue-Bold",
+            headingTextFontSize: 24,
+            headingTextColorHex: "#0a0a0a"
+        ),
+        toolbar: .init(
+            textFontName: "AvenirNext-DemiBold",
+            textFontSize: 17,
+            textColorHex: "#ffffff",
+            backgroundColorHex: "#007aff",
+            headerText: "Secure Checkout",
+            buttonText: "Cancel"
+        ),
+        // ... additional customizations
+    )
+    // Separate dark mode customization
+    let dark = Gr4vyThreeDSUiCustomization(...)
+    
+    return Gr4vyThreeDSUiCustomizationMap(default: light, dark: dark)
+}
+```
+
+Customizable elements include:
+- Labels (text font, size, color for both body and heading)
+- Toolbar (font, colors, button text, header text)
+- Text boxes (font, colors, border width, corner radius)
+- View backgrounds (challenge and progress views)
+- Buttons (submit, continue, next, resend, etc. - each with individual styling)
+
 ### SDK Integration
 
+Basic SDK initialization:
 ```swift
 let server: Gr4vyServer = serverEnvironment == "production" ? .production : .sandbox
 let timeoutInterval = TimeInterval(Double(timeout) ?? 30.0)
@@ -202,10 +269,32 @@ guard let gr4vy = try? Gr4vy(
     gr4vyId: gr4vyID,
     token: token,
     server: server,
-    timeout: timeoutInterval
+    timeout: timeoutInterval,
+    debugMode: true
 ) else {
     showError("Failed to configure Gr4vy SDK")
     return
+}
+```
+
+Tokenize with 3DS authentication:
+
+```swift
+gr4vy.tokenize(
+    checkoutSessionId: checkoutSessionId,
+    cardData: cardData,
+    sdkMaxTimeoutMinutes: sdkMaxTimeout,
+    authenticate: authenticate,
+    uiCustomization: customTheme
+) { result in
+    DispatchQueue.main.async {
+        switch result {
+        case .success(let tokenizeResult):
+            // Access tokenizeResult.tokenized and tokenizeResult.authentication
+        case .failure(let error):
+            // Handle error
+        }
+    }
 }
 ```
 

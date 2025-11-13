@@ -1,5 +1,5 @@
 {
-  "originHash" : "a9eb3f0d0ff8faee170594c591f4342e7c90d2d36770337b3fd500823ee7e1f8",
+  "originHash" : "e35771b46c82e137768c02f7c83b9d1ec5390f38447394f78344e859f58be3aa",
   "pins" : [
     {
       "identity" : "gr4vy-swift",
@@ -7,7 +7,16 @@
       "location" : "https://github.com/gr4vy/gr4vy-swift",
       "state" : {
         "branch" : "main",
-        "revision" : "05fc1e19a4cb890b68b21019507f2eb8313d5160"
+        "revision" : "a3f768a98d5618fd23939fbd914c1370916cee6f"
+      }
+    },
+    {
+      "identity" : "spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-3ds-sdk/SPM.git",
+      "state" : {
+        "revision" : "421449969baa6ef80c33fd077c217f724ccfd348",
+        "version" : "2.5.30"
       }
     }
   ],

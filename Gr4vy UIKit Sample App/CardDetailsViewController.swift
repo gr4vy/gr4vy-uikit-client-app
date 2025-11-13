@@ -60,7 +60,7 @@ class CardDetailsViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(TextFieldTableViewCell.self, forCellReuseIdentifier: "TextFieldCell")
-        tableView.register(SwitchTableViewCell.self, forCellReuseIdentifier: "SwitchCell")
+        tableView.register(FieldsSwitchTableViewCell.self, forCellReuseIdentifier: "SwitchCell")
         
         view.addSubview(tableView)
         
@@ -379,6 +379,10 @@ class CardDetailsViewController: UIViewController {
                 handleNetworkError(urlError, gr4vyID: gr4vyID)
             case .decodingError(let message):
                 showError("Decoding error: \(message)")
+            case .uiContextError(let message):
+                showError("UI error: \(message)")
+            case .threeDSError(let message):
+                showError("3DS error: \(message)")
             }
         } else {
             handleNetworkError(error, gr4vyID: gr4vyID)
@@ -518,7 +522,7 @@ extension CardDetailsViewController: UITableViewDataSource, UITableViewDelegate 
             return cell
             
         case 1:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell", for: indexPath) as! SwitchTableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell", for: indexPath) as! FieldsSwitchTableViewCell
             switch indexPath.row {
             case 0:
                 cell.configure(with: isSubsequentPaymentSwitch, title: "is_subsequent_payment")
@@ -550,7 +554,7 @@ extension CardDetailsViewController: UITableViewDataSource, UITableViewDelegate 
 }
 
 // MARK: - Custom Switch Cell
-class SwitchTableViewCell: UITableViewCell {
+class FieldsSwitchTableViewCell: UITableViewCell {
     
     private let titleLabel = UILabel()
     private var switchControl: UISwitch?
@@ -625,4 +629,4 @@ class TextFieldTableViewCell: UITableViewCell {
             textField.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
         ])
     }
-} 
+}

@@ -81,15 +81,15 @@ class HomeViewController: UIViewController {
         }
         stackView.addArrangedSubview(paymentOptionsButton)
         
-        // Fields button
-        let fieldsButton = createButtonView(
-            title: "Fields",
-            systemImage: "textformat"
+        // Tokenize button
+        let tokenizeButton = createButtonView(
+            title: "Tokenize",
+            systemImage: "key.fill"
         ) { [weak self] in
             let fieldsVC = FieldsViewController()
             self?.navigationController?.pushViewController(fieldsVC, animated: true)
         }
-        stackView.addArrangedSubview(fieldsButton)
+        stackView.addArrangedSubview(tokenizeButton)
         
         // Card Details button
         let cardDetailsButton = createButtonView(
