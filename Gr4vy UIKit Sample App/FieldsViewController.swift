@@ -26,13 +26,38 @@ private enum ThemeOption: String, CaseIterable {
     case redBlue
     case orangePurple
     case greenYellow
-    
+    case lightDarkCheck
+
     var displayName: String {
         switch self {
         case .none: return "No Theme"
         case .redBlue: return "Red / Blue"
         case .orangePurple: return "Orange / Purple"
         case .greenYellow: return "Green / Yellow"
+        case .lightDarkCheck: return "Light / Dark Check"
+        }
+    }
+}
+
+// Appearance override, so the light/dark 3DS theme variants can be checked without changing the device setting
+private enum AppearanceOption: String, CaseIterable {
+    case system
+    case light
+    case dark
+
+    var displayName: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    var interfaceStyle: UIUserInterfaceStyle {
+        switch self {
+        case .system: return .unspecified
+        case .light: return .light
+        case .dark: return .dark
         }
     }
 }
@@ -135,6 +160,7 @@ class FieldsViewController: UIViewController {
     
     // 3DS Settings
     private let authenticateSwitch = UISwitch()
+    private let preferredSchemeTextField = UITextField()
     private var selectedTestCard: TestCard = .custom
     private var selectedTheme: ThemeOption = .none
     private let sdkMaxTimeoutTextField = UITextField()
@@ -146,6 +172,7 @@ class FieldsViewController: UIViewController {
     // Theme Picker
     private let themePicker = UIPickerView()
     private let themeTextField = UITextField()
+    private let appearanceSegmentedControl = UISegmentedControl(items: AppearanceOption.allCases.map { $0.displayName })
     
     // State
     private var isLoading = false
@@ -209,7 +236,9 @@ class FieldsViewController: UIViewController {
     
     private func setupErrorView() {
         errorView.translatesAutoresizingMaskIntoConstraints = false
-        errorView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.1)
+        errorView.backgroundColor = .secondarySystemGroupedBackground
+        errorView.layer.borderColor = UIColor.systemRed.cgColor
+        errorView.layer.borderWidth = 1
         errorView.layer.cornerRadius = 8
         errorView.isHidden = true
         
@@ -279,7 +308,13 @@ class FieldsViewController: UIViewController {
         
         // 3DS Settings
         authenticateSwitch.addTarget(self, action: #selector(authenticateSwitchChanged(_:)), for: .valueChanged)
-        
+
+        // Preferred scheme for co-badged cards, sent as ?preferredScheme= on the 3DS version call
+        preferredSchemeTextField.placeholder = "preferred_scheme"
+        preferredSchemeTextField.autocapitalizationType = .none
+        preferredSchemeTextField.autocorrectionType = .no
+        preferredSchemeTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+
         sdkMaxTimeoutTextField.placeholder = "SDK Max Timeout (minutes)"
         sdkMaxTimeoutTextField.keyboardType = .numberPad
         sdkMaxTimeoutTextField.autocapitalizationType = .none
@@ -289,6 +324,22 @@ class FieldsViewController: UIViewController {
         // Setup pickers
         setupThemePicker()
         setupTestCardPicker()
+
+        appearanceSegmentedControl.addTarget(self, action: #selector(appearanceChanged(_:)), for: .valueChanged)
+    }
+
+    @objc private func appearanceChanged(_ sender: UISegmentedControl) {
+        let option = AppearanceOption.allCases[sender.selectedSegmentIndex]
+        UserDefaults.standard.set(option.rawValue, forKey: "fields_appearance")
+        applyAppearance(option)
+    }
+
+    // Applied at window level so the 3DS challenge presented by the SDK inherits it
+    private func applyAppearance(_ option: AppearanceOption) {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .forEach { $0.overrideUserInterfaceStyle = option.interfaceStyle }
     }
     
     private func setupThemePicker() {
@@ -381,6 +432,7 @@ class FieldsViewController: UIViewController {
     @objc private func clearForm() {
         selectedTestCard = .custom
         testCardTextField.text = selectedTestCard.displayName
+        testCardPicker.selectRow(TestCard.allCases.firstIndex(of: .custom) ?? 0, inComponent: 0, animated: false)
         cardNumberTextField.text = ""
         expirationDateTextField.text = ""
         securityCodeTextField.text = ""
@@ -425,15 +477,25 @@ class FieldsViewController: UIViewController {
         // 3DS Settings
         let authenticateValue = UserDefaults.standard.object(forKey: "fields_authenticate") as? Bool ?? true
         authenticateSwitch.isOn = authenticateValue
-        
+        preferredSchemeTextField.text = UserDefaults.standard.string(forKey: "fields_preferred_scheme") ?? ""
+        updatePreferredSchemeEnabled()
+
         let testCardValue = UserDefaults.standard.string(forKey: "fields_test_card") ?? TestCard.custom.rawValue
         selectedTestCard = TestCard(rawValue: testCardValue) ?? .custom
         testCardTextField.text = selectedTestCard.displayName
-        
+        // Start the pickers on the saved option, so tapping Done straight away keeps it
+        testCardPicker.selectRow(TestCard.allCases.firstIndex(of: selectedTestCard) ?? 0, inComponent: 0, animated: false)
+
         let themeValue = UserDefaults.standard.string(forKey: "fields_theme") ?? ThemeOption.none.rawValue
         selectedTheme = ThemeOption(rawValue: themeValue) ?? .none
         themeTextField.text = selectedTheme.displayName
-        
+        themePicker.selectRow(ThemeOption.allCases.firstIndex(of: selectedTheme) ?? 0, inComponent: 0, animated: false)
+
+        let appearanceValue = UserDefaults.standard.string(forKey: "fields_appearance") ?? AppearanceOption.system.rawValue
+        let appearance = AppearanceOption(rawValue: appearanceValue) ?? .system
+        appearanceSegmentedControl.selectedSegmentIndex = AppearanceOption.allCases.firstIndex(of: appearance) ?? 0
+        applyAppearance(appearance)
+
         sdkMaxTimeoutTextField.text = UserDefaults.standard.string(forKey: "fields_sdk_max_timeout") ?? "5"
     }
     
@@ -459,19 +521,28 @@ class FieldsViewController: UIViewController {
             UserDefaults.standard.set(value, forKey: "fields_payment_method_id")
         case idSecurityCodeTextField:
             UserDefaults.standard.set(value, forKey: "fields_id_security_code")
+        case preferredSchemeTextField:
+            UserDefaults.standard.set(value, forKey: "fields_preferred_scheme")
         default:
             break
         }
     }
-    
+
     @objc private func authenticateSwitchChanged(_ sender: UISwitch) {
         UserDefaults.standard.set(sender.isOn, forKey: "fields_authenticate")
+        updatePreferredSchemeEnabled()
+    }
+
+    /// The SDK only uses the preferred scheme when authenticating, so the field is greyed out otherwise.
+    private func updatePreferredSchemeEnabled() {
+        preferredSchemeTextField.isEnabled = authenticateSwitch.isOn
+        preferredSchemeTextField.alpha = authenticateSwitch.isOn ? 1 : 0.4
     }
     
     @objc private func sdkMaxTimeoutChanged(_ sender: UITextField) {
-        // Filter to only allow numbers, max 5 digits
+        // Minutes: digits only, max 2 (sent as 5 to 99)
         let filtered = sender.text?.filter { $0.isNumber } ?? ""
-        let limited = String(filtered.prefix(5))
+        let limited = String(filtered.prefix(2))
         sender.text = limited
         UserDefaults.standard.set(limited, forKey: "fields_sdk_max_timeout")
     }
@@ -497,9 +568,21 @@ class FieldsViewController: UIViewController {
         let token = UserDefaults.standard.string(forKey: "apiToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let serverEnvironment = UserDefaults.standard.string(forKey: "serverEnvironment") ?? "sandbox"
         let timeoutString = UserDefaults.standard.string(forKey: "timeout") ?? ""
-        
+
+        guard !gr4vyID.isEmpty else {
+            finishLoading()
+            showError("Please configure Gr4vy ID in Admin settings")
+            return
+        }
+
+        guard !token.isEmpty else {
+            finishLoading()
+            showError("Please configure API Token in Admin settings")
+            return
+        }
+
         let server: Gr4vyServer = serverEnvironment == "production" ? .production : .sandbox
-        
+
         let gr4vy: Gr4vy?
         if let timeoutValue = Double(timeoutString.trimmingCharacters(in: .whitespacesAndNewlines)), 
            timeoutValue > 0, 
@@ -522,6 +605,7 @@ class FieldsViewController: UIViewController {
         }
         
         guard let gr4vy = gr4vy else {
+            finishLoading()
             showError("Failed to configure Gr4vy SDK")
             return
         }
@@ -559,21 +643,22 @@ class FieldsViewController: UIViewController {
         let cardData = Gr4vyCardData(paymentMethod: paymentMethod)
         
         let authenticate = authenticateSwitch.isOn
-        let sdkMaxTimeout = Int(sdkMaxTimeoutTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "5") ?? 5
+        // Minutes, like the SDK parameter; the 3DS SDK accepts 5 to 99
+        let sdkMaxTimeout = min(max(Int(sdkMaxTimeoutTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "") ?? 5, 5), 99)
         let uiCustomization = uiCustomizationForTheme(selectedTheme)
-        
+        let preferredScheme = preferredSchemeTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
         gr4vy.tokenize(
             checkoutSessionId: checkoutSessionId,
             cardData: cardData,
             sdkMaxTimeoutMinutes: sdkMaxTimeout,
             authenticate: authenticate,
-            uiCustomization: uiCustomization
+            uiCustomization: uiCustomization,
+            preferredScheme: preferredScheme.isEmpty ? nil : preferredScheme
         ) { [weak self] result in
             DispatchQueue.main.async {
-                self?.isLoading = false
-                self?.activityIndicator.stopAnimating()
-                self?.navigationItem.rightBarButtonItem?.isEnabled = true
-                
+                self?.finishLoading()
+
                 switch result {
                 case .success(let tokenizeResult):
                     self?.showCompleteResponse(tokenizeResult: tokenizeResult)
@@ -618,6 +703,7 @@ class FieldsViewController: UIViewController {
             let jsonData = try JSONSerialization.data(withJSONObject: completeResponse, options: [.prettyPrinted, .sortedKeys])
             let responseVC = JSONResponseViewController()
             responseVC.responseData = jsonData
+            responseVC.screenTitle = "Complete"
             navigationController?.pushViewController(responseVC, animated: true)
         } catch {
             showError("Success, but failed to format response: \(error.localizedDescription)")
@@ -628,82 +714,116 @@ class FieldsViewController: UIViewController {
         if let gr4vyError = error as? Gr4vyError {
             switch gr4vyError {
             case .invalidGr4vyId:
-                showError("Invalid Gr4vy ID: \(gr4vyError.localizedDescription)")
+                showErrorResponse(errorMessage: "Invalid Gr4vy ID", errorDetails: ["description": gr4vyError.localizedDescription])
             case .badURL(let url):
-                showError("Bad URL: \(url)")
+                showErrorResponse(errorMessage: "Bad URL", errorDetails: ["url": url])
             case .httpError(let statusCode, let responseData, _):
-                let responseVC = JSONResponseViewController()
-                responseVC.responseData = responseData
-                responseVC.errorStatusCode = statusCode
-                
                 if statusCode == 400 {
                     showError("Bad Request (400) - Tap to view details", canTapForDetails: true, responseData: responseData, statusCode: statusCode)
                 } else {
                     showError("HTTP Error \(statusCode) - Tap to view details", canTapForDetails: true, responseData: responseData, statusCode: statusCode)
                 }
+                // Like the SwiftUI app, open the error response straight away
+                pushErrorResponse(responseData, statusCode: statusCode)
             case .networkError(let urlError):
                 handleNetworkError(urlError, gr4vyID: gr4vyID)
             case .decodingError(let message):
-                showError("Decoding error: \(message)")
+                showErrorResponse(errorMessage: "Decoding error", errorDetails: ["description": message])
             case .threeDSError(let message):
-                showError("3DS error: \(message)")
+                showErrorResponse(errorMessage: "3DS error", errorDetails: ["description": message])
             case .uiContextError(let message):
-                showError("UI context error: \(message)")
+                showErrorResponse(errorMessage: "UI error", errorDetails: ["description": message])
             }
         } else {
             handleNetworkError(error, gr4vyID: gr4vyID)
         }
     }
-    
+
     private func handleNetworkError(_ error: Error, gr4vyID: String) {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .cannotFindHost:
-                showError("Cannot find server. Please check your Merchant ID (\(gr4vyID)). The URL being called is: https://api.\(gr4vyID).gr4vy.app/tokenize")
+                showErrorResponse(errorMessage: "Cannot find server", errorDetails: [
+                    "description": "Please check your Merchant ID (\(gr4vyID))",
+                    "url": "https://api.\(gr4vyID).gr4vy.app",
+                    "error_code": "cannotFindHost"
+                ])
             case .notConnectedToInternet:
-                showError("No internet connection. Please check your network settings.")
+                showErrorResponse(errorMessage: "No internet connection", errorDetails: [
+                    "description": "Please check your network settings",
+                    "error_code": "notConnectedToInternet"
+                ])
             case .timedOut:
-                showError("Request timed out. Please try again.")
+                showErrorResponse(errorMessage: "Request timed out", errorDetails: [
+                    "description": "Please try again",
+                    "error_code": "timedOut"
+                ])
             case .badServerResponse:
-                showError("Server error. Please check your API token and try again.")
+                showErrorResponse(errorMessage: "Server error", errorDetails: [
+                    "description": "Please check your API token and try again",
+                    "error_code": "badServerResponse"
+                ])
             default:
-                showError("Network error: \(urlError.localizedDescription)")
+                showErrorResponse(errorMessage: "Network error", errorDetails: [
+                    "description": urlError.localizedDescription,
+                    "error_code": String(urlError.code.rawValue)
+                ])
             }
         } else {
-            showError("Failed to tokenize: \(error.localizedDescription)")
+            showErrorResponse(errorMessage: "Failed to tokenize payment method", errorDetails: ["description": error.localizedDescription])
         }
     }
+
+    /// Like the SwiftUI app: SDK and network errors open an "Error" screen with the details as JSON.
+    private func showErrorResponse(errorMessage: String, errorDetails: [String: Any] = [:]) {
+        var errorResponse: [String: Any] = ["error": errorMessage]
+        errorResponse.merge(errorDetails) { _, new in new }
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: errorResponse, options: [.prettyPrinted, .sortedKeys]) else {
+            showError("Error: \(errorMessage)")
+            return
+        }
+        let responseVC = JSONResponseViewController()
+        responseVC.responseData = jsonData
+        responseVC.screenTitle = "Error"
+        responseVC.isError = true
+        navigationController?.pushViewController(responseVC, animated: true)
+    }
+
+    private func pushErrorResponse(_ data: Data?, statusCode: Int) {
+        let responseVC = JSONResponseViewController()
+        responseVC.responseData = data
+        responseVC.errorStatusCode = statusCode
+        responseVC.screenTitle = "Error Response (Status: \(statusCode))"
+        navigationController?.pushViewController(responseVC, animated: true)
+    }
+
+    private func finishLoading() {
+        isLoading = false
+        activityIndicator.stopAnimating()
+        navigationItem.rightBarButtonItem?.isEnabled = true
+    }
     
+    /// Details of the latest HTTP error, opened by tapping the red message. Cleared by any later error.
+    private var errorResponse: (data: Data?, statusCode: Int)?
+
     private func showError(_ message: String, canTapForDetails: Bool = false, responseData: Data? = nil, statusCode: Int? = nil) {
         errorLabel.text = message
         errorView.isHidden = false
-        
-        if canTapForDetails {
-            errorView.gestureRecognizers?.removeAll()
-            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showErrorDetails))
-            errorView.addGestureRecognizer(tapGesture)
-            
-            // Store error details
-            if let data = responseData, let code = statusCode {
-                let responseVC = JSONResponseViewController()
-                responseVC.responseData = data
-                responseVC.errorStatusCode = code
-                // Store reference for later use
-                objc_setAssociatedObject(self, &AssociatedKeys.errorResponseViewController, responseVC, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            }
-        }
-    }
-    
-    @objc private func showErrorDetails() {
-        if let responseVC = objc_getAssociatedObject(self, &AssociatedKeys.errorResponseViewController) as? JSONResponseViewController {
-            navigationController?.pushViewController(responseVC, animated: true)
-        }
-    }
-}
 
-// MARK: - Associated Keys
-private struct AssociatedKeys {
-    static var errorResponseViewController = "errorResponseViewController"
+        // Only the latest error can be opened, so a later error never reopens an old response
+        errorView.gestureRecognizers = nil
+        errorResponse = nil
+        if canTapForDetails, let code = statusCode {
+            errorResponse = (responseData, code)
+            errorView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(showErrorDetails)))
+        }
+    }
+
+    @objc private func showErrorDetails() {
+        guard let errorResponse else { return }
+        pushErrorResponse(errorResponse.data, statusCode: errorResponse.statusCode)
+    }
 }
 
 // MARK: - UIPickerView DataSource and Delegate
@@ -740,7 +860,7 @@ extension FieldsViewController: UITableViewDataSource, UITableViewDelegate {
         var sections = 4
         
         if selectedPaymentMethodType == .card {
-            sections += 4 // Authentication, Test Cards, Card Details, (Clear button handled as extra row)
+            sections += 3 // Authentication, Test Cards, Card Details (the Clear button is an extra row)
         } else if selectedPaymentMethodType == .id {
             sections += 1 // ID Details
         }
@@ -751,13 +871,13 @@ extension FieldsViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return 1 // Session (checkout_session_id)
-        case 1: return 1 // Theme
+        case 1: return 2 // Theme + appearance
         case 2: return 1 // SDK Settings
         case 3: return 1 // Payment Method Type
         default:
             if selectedPaymentMethodType == .card {
                 switch section {
-                case 4: return 1 // Authentication toggle
+                case 4: return 2 // Authentication toggle + preferred scheme
                 case 5: return selectedTestCard != .custom ? 2 : 1 // Test Card picker + Clear button if needed
                 case 6: return 3 // Card details (number, expiration, cvv)
                 default: return 0
@@ -795,7 +915,14 @@ extension FieldsViewController: UITableViewDataSource, UITableViewDelegate {
             return nil
         }
     }
-    
+
+    func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        if selectedPaymentMethodType == .card && section == 4 {
+            return "Gr4vy scheme ID, e.g. carte-bancaire or visa. Empty for no preference."
+        }
+        return nil
+    }
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
@@ -816,10 +943,16 @@ extension FieldsViewController: UITableViewDataSource, UITableViewDelegate {
             return cell
             
         case 1:
-            // Theme
-            let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! FieldsTextFieldTableViewCell
-            cell.configure(with: themeTextField)
-            return cell
+            // Theme and appearance
+            if indexPath.row == 0 {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! FieldsTextFieldTableViewCell
+                cell.configure(with: themeTextField)
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "SegmentedControlCell", for: indexPath) as! FieldsSegmentedControlTableViewCell
+                cell.configure(with: appearanceSegmentedControl, title: "Appearance")
+                return cell
+            }
             
         case 2:
             // SDK Settings
@@ -838,9 +971,15 @@ extension FieldsViewController: UITableViewDataSource, UITableViewDelegate {
                 switch indexPath.section {
                 case 4:
                     // Authentication
-                    let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell", for: indexPath) as! SwitchTableViewCell
-                    cell.configure(with: authenticateSwitch, title: "Authenticate")
-                    return cell
+                    if indexPath.row == 0 {
+                        let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell", for: indexPath) as! SwitchTableViewCell
+                        cell.configure(with: authenticateSwitch, title: "Authenticate")
+                        return cell
+                    } else {
+                        let cell = tableView.dequeueReusableCell(withIdentifier: "TextFieldCell", for: indexPath) as! FieldsTextFieldTableViewCell
+                        cell.configure(with: preferredSchemeTextField)
+                        return cell
+                    }
                     
                 case 5:
                     // Test Cards
@@ -905,6 +1044,8 @@ extension FieldsViewController {
             return buildOrangePurpleTheme()
         case .greenYellow:
             return buildGreenYellowTheme()
+        case .lightDarkCheck:
+            return buildLightDarkCheckTheme()
         }
     }
     
@@ -1156,7 +1297,59 @@ extension FieldsViewController {
                 .cancel: .init(textFontSize: 16, textColorHex: "#000000")
             ]
         )
-        
+
+        return Gr4vyThreeDSUiCustomizationMap(default: light, dark: dark)
+    }
+
+    private func buildLightDarkCheckTheme() -> Gr4vyThreeDSUiCustomizationMap {
+        // The header text names the variant in use, so it is obvious which one the 3DS SDK applied
+        let light = Gr4vyThreeDSUiCustomization(
+            label: .init(textColorHex: "#000000", headingTextColorHex: "#000000"),
+            toolbar: .init(
+                textColorHex: "#000000",
+                backgroundColorHex: "#ffd60a",
+                headerText: "LIGHT THEME",
+                buttonText: "Cancel"
+            ),
+            textBox: .init(textColorHex: "#000000", borderWidth: 2, borderColorHex: "#000000", cornerRadius: 8),
+            view: .init(
+                challengeViewBackgroundColorHex: "#ffffff",
+                progressViewBackgroundColorHex: "#ffffff"
+            ),
+            buttons: [
+                .submit: .init(textColorHex: "#000000", backgroundColorHex: "#ffd60a", cornerRadius: 8),
+                .continue: .init(textColorHex: "#000000", backgroundColorHex: "#ffd60a", cornerRadius: 8),
+                .next: .init(textColorHex: "#000000", backgroundColorHex: "#ffd60a", cornerRadius: 8),
+                .resend: .init(textColorHex: "#000000", backgroundColorHex: "#e5e5ea", cornerRadius: 8),
+                .openOobApp: .init(textColorHex: "#000000", backgroundColorHex: "#ffd60a", cornerRadius: 8),
+                .addCardholder: .init(textColorHex: "#000000", backgroundColorHex: "#e5e5ea", cornerRadius: 8),
+                .cancel: .init(textColorHex: "#000000")
+            ]
+        )
+        let dark = Gr4vyThreeDSUiCustomization(
+            label: .init(textColorHex: "#ffffff", headingTextColorHex: "#ffffff"),
+            toolbar: .init(
+                textColorHex: "#ffffff",
+                backgroundColorHex: "#bf5af2",
+                headerText: "DARK THEME",
+                buttonText: "Cancel"
+            ),
+            textBox: .init(textColorHex: "#ffffff", borderWidth: 2, borderColorHex: "#ffffff", cornerRadius: 8),
+            view: .init(
+                challengeViewBackgroundColorHex: "#000000",
+                progressViewBackgroundColorHex: "#000000"
+            ),
+            buttons: [
+                .submit: .init(textColorHex: "#ffffff", backgroundColorHex: "#bf5af2", cornerRadius: 8),
+                .continue: .init(textColorHex: "#ffffff", backgroundColorHex: "#bf5af2", cornerRadius: 8),
+                .next: .init(textColorHex: "#ffffff", backgroundColorHex: "#bf5af2", cornerRadius: 8),
+                .resend: .init(textColorHex: "#ffffff", backgroundColorHex: "#3a3a3c", cornerRadius: 8),
+                .openOobApp: .init(textColorHex: "#ffffff", backgroundColorHex: "#bf5af2", cornerRadius: 8),
+                .addCardholder: .init(textColorHex: "#ffffff", backgroundColorHex: "#3a3a3c", cornerRadius: 8),
+                .cancel: .init(textColorHex: "#ffffff")
+            ]
+        )
+
         return Gr4vyThreeDSUiCustomizationMap(default: light, dark: dark)
     }
 }

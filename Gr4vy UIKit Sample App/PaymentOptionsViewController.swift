@@ -53,8 +53,14 @@ class PaymentOptionsViewController: UIViewController {
     var cartItems: [CartItemEntry] = []
     
     // State
-    var isLoading = false
-    
+    var isLoading = false {
+        didSet {
+            // Section 3 is the "Sending request..." row, shown only while loading
+            guard isLoading != oldValue, isViewLoaded else { return }
+            tableView.reloadSections(IndexSet(integer: 3), with: .automatic)
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -113,7 +119,9 @@ class PaymentOptionsViewController: UIViewController {
     
     private func setupErrorView() {
         errorView.translatesAutoresizingMaskIntoConstraints = false
-        errorView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.1)
+        errorView.backgroundColor = .secondarySystemGroupedBackground
+        errorView.layer.borderColor = UIColor.systemRed.cgColor
+        errorView.layer.borderWidth = 1
         errorView.layer.cornerRadius = 8
         errorView.isHidden = true
         
@@ -137,10 +145,6 @@ class PaymentOptionsViewController: UIViewController {
             errorLabel.trailingAnchor.constraint(equalTo: errorView.trailingAnchor, constant: -12),
             errorLabel.bottomAnchor.constraint(equalTo: errorView.bottomAnchor, constant: -12)
         ])
-        
-        // Add tap gesture to error view
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(errorViewTapped))
-        errorView.addGestureRecognizer(tapGesture)
     }
     
     private func setupFormFields() {
@@ -258,10 +262,6 @@ class PaymentOptionsViewController: UIViewController {
         sendRequest()
     }
     
-    @objc private func errorViewTapped() {
-        // Handle error view tap - could show more details
-    }
-    
     private func sendRequest() {
         isLoading = true
         errorView.isHidden = true
@@ -275,15 +275,30 @@ class PaymentOptionsViewController: UIViewController {
         let timeoutString = UserDefaults.standard.string(forKey: "timeout") ?? ""
         let merchantId = UserDefaults.standard.string(forKey: "merchantId")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         
+        guard !gr4vyID.isEmpty else {
+            finishLoading()
+            showError("Please configure Gr4vy ID in Admin settings")
+            return
+        }
+
+        guard !token.isEmpty else {
+            finishLoading()
+            showError("Please configure API Token in Admin settings")
+            return
+        }
+
         let server: Gr4vyServer = serverEnvironment == "production" ? .production : .sandbox
-        let timeoutInterval = TimeInterval(Double(timeoutString) ?? 30.0)
-        
-        guard let gr4vy = try? Gr4vy(
-            gr4vyId: gr4vyID,
-            token: token,
-            server: server,
-            timeout: timeoutInterval
-        ) else {
+
+        // Like the other screens: pass the Admin timeout only when it's set and positive, else the SDK default
+        let gr4vy: Gr4vy?
+        if let timeoutValue = Double(timeoutString.trimmingCharacters(in: .whitespacesAndNewlines)), timeoutValue > 0 {
+            gr4vy = try? Gr4vy(gr4vyId: gr4vyID, token: token, server: server, timeout: TimeInterval(timeoutValue))
+        } else {
+            gr4vy = try? Gr4vy(gr4vyId: gr4vyID, token: token, server: server)
+        }
+
+        guard let gr4vy = gr4vy else {
+            finishLoading()
             showError("Failed to configure Gr4vy SDK")
             return
         }
@@ -355,10 +370,8 @@ class PaymentOptionsViewController: UIViewController {
         
         gr4vy.paymentOptions.list(request: requestBody) { [weak self] result in
             DispatchQueue.main.async {
-                self?.isLoading = false
-                self?.activityIndicator.stopAnimating()
-                self?.navigationItem.rightBarButtonItem?.isEnabled = true
-                
+                self?.finishLoading()
+
                 switch result {
                 case .success(let options):
                     // Convert the response to JSON for display
@@ -369,6 +382,7 @@ class PaymentOptionsViewController: UIViewController {
                         
                         let responseVC = JSONResponseViewController()
                         responseVC.responseData = jsonData
+                        responseVC.screenTitle = "Payment Options Response"
                         self?.navigationController?.pushViewController(responseVC, animated: true)
                     } catch {
                         self?.showError("Failed to encode response: \(error.localizedDescription)")
@@ -388,16 +402,14 @@ class PaymentOptionsViewController: UIViewController {
                 showError("Invalid Gr4vy ID: \(gr4vyError.localizedDescription)")
             case .badURL(let url):
                 showError("Bad URL: \(url)")
-            case .httpError(let statusCode, let responseData, let message):
-                let responseVC = JSONResponseViewController()
-                responseVC.responseData = responseData
-                responseVC.errorStatusCode = statusCode
-                
+            case .httpError(let statusCode, let responseData, _):
                 if statusCode == 400 {
                     showError("Bad Request (400) - Tap to view details", canTapForDetails: true, responseData: responseData, statusCode: statusCode)
                 } else {
                     showError("HTTP Error \(statusCode) - Tap to view details", canTapForDetails: true, responseData: responseData, statusCode: statusCode)
                 }
+                // Like the SwiftUI app, open the error response straight away
+                pushErrorResponse(responseData, statusCode: statusCode)
             case .networkError(let urlError):
                 handleNetworkError(urlError, gr4vyID: gr4vyID)
             case .decodingError(let message):
@@ -431,36 +443,40 @@ class PaymentOptionsViewController: UIViewController {
         }
     }
     
+    /// Details of the latest HTTP error, opened by tapping the red message. Cleared by any later error.
+    private var errorResponse: (data: Data?, statusCode: Int)?
+
     private func showError(_ message: String, canTapForDetails: Bool = false, responseData: Data? = nil, statusCode: Int? = nil) {
         errorLabel.text = message
         errorView.isHidden = false
-        
-        if canTapForDetails {
-            errorView.gestureRecognizers?.removeAll()
-            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showErrorDetails))
-            errorView.addGestureRecognizer(tapGesture)
-            
-            // Store error details
-            if let data = responseData, let code = statusCode {
-                let responseVC = JSONResponseViewController()
-                responseVC.responseData = data
-                responseVC.errorStatusCode = code
-                // Store reference for later use
-                objc_setAssociatedObject(self, &AssociatedKeys.errorResponseViewController, responseVC, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            }
-        }
-    }
-    
-    @objc private func showErrorDetails() {
-        if let responseVC = objc_getAssociatedObject(self, &AssociatedKeys.errorResponseViewController) as? JSONResponseViewController {
-            navigationController?.pushViewController(responseVC, animated: true)
-        }
-    }
-}
 
-// MARK: - Associated Keys
-private struct AssociatedKeys {
-    static var errorResponseViewController = "errorResponseViewController"
+        // Only the latest error can be opened, so a later error never reopens an old response
+        errorView.gestureRecognizers = nil
+        errorResponse = nil
+        if canTapForDetails, let code = statusCode {
+            errorResponse = (responseData, code)
+            errorView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(showErrorDetails)))
+        }
+    }
+
+    @objc private func showErrorDetails() {
+        guard let errorResponse else { return }
+        pushErrorResponse(errorResponse.data, statusCode: errorResponse.statusCode)
+    }
+
+    private func pushErrorResponse(_ data: Data?, statusCode: Int) {
+        let responseVC = JSONResponseViewController()
+        responseVC.responseData = data
+        responseVC.errorStatusCode = statusCode
+        responseVC.screenTitle = "Error Response (Status: \(statusCode))"
+        navigationController?.pushViewController(responseVC, animated: true)
+    }
+
+    private func finishLoading() {
+        isLoading = false
+        activityIndicator.stopAnimating()
+        navigationItem.rightBarButtonItem?.isEnabled = true
+    }
 }
 
 // MARK: - Codable Data Structures

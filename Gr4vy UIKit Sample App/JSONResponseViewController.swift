@@ -13,7 +13,11 @@ class JSONResponseViewController: UIViewController {
     
     var responseData: Data?
     var errorStatusCode: Int?
-    
+    /// Navigation title, e.g. "Complete" or "Error Response (Status: 400)". Defaults to "Response".
+    var screenTitle: String?
+    /// Shows the response as an error (red) even without an HTTP status, e.g. for SDK or network errors.
+    var isError = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -25,7 +29,7 @@ class JSONResponseViewController: UIViewController {
     }
     
     private func setupUI() {
-        title = "Response"
+        title = screenTitle ?? "Response"
         view.backgroundColor = UIColor.systemBackground
         
         // Add share button
@@ -43,7 +47,7 @@ class JSONResponseViewController: UIViewController {
         textView.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         
         // Set background color based on whether it's an error
-        if errorStatusCode != nil {
+        if errorStatusCode != nil || isError {
             textView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.1)
             textView.textColor = UIColor.systemRed
         } else {

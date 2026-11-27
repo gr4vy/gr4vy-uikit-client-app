@@ -21,7 +21,6 @@ class AdminViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupTableView()
         loadSavedSettings()
     }
     
@@ -49,12 +48,7 @@ class AdminViewController: UIViewController {
         
         setupTextFields()
     }
-    
-    private func setupTableView() {
-        // Configure text fields
-        setupTextFields()
-    }
-    
+
     private func setupTextFields() {
         // Configure merchant ID text field
         merchantIdTextField.placeholder = "merchantId"

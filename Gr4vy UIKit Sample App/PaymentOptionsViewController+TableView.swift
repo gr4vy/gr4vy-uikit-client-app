@@ -86,8 +86,12 @@ extension PaymentOptionsViewController: UITableViewDataSource, UITableViewDelega
                 let cell = tableView.dequeueReusableCell(withIdentifier: "CartItemCell", for: indexPath) as! CartItemTableViewCell
                 cell.configure(
                     with: cartItems[indexPath.row],
-                    onChange: { [weak self] in
-                        self?.saveCartItems()
+                    onChange: { [weak self] updatedItem in
+                        // CartItemEntry is a struct: the cell edits its own copy, so write it back by id
+                        guard let self = self,
+                              let index = self.cartItems.firstIndex(where: { $0.id == updatedItem.id }) else { return }
+                        self.cartItems[index] = updatedItem
+                        self.saveCartItems()
                     },
                     onDelete: { [weak self] in
                         guard let self = self else { return }
@@ -253,7 +257,7 @@ class CartItemTableViewCell: UITableViewCell {
     private let productTypeTextField = UITextField()
     private let sellerCountryTextField = UITextField()
     
-    private var onChange: (() -> Void)?
+    private var onChange: ((CartItemEntry) -> Void)?
     private var onDelete: (() -> Void)?
     private var cartItem: CartItemEntry?
     
@@ -362,7 +366,7 @@ class CartItemTableViewCell: UITableViewCell {
         }
     }
     
-    func configure(with item: CartItemEntry, onChange: @escaping () -> Void, onDelete: @escaping () -> Void) {
+    func configure(with item: CartItemEntry, onChange: @escaping (CartItemEntry) -> Void, onDelete: @escaping () -> Void) {
         self.cartItem = item
         self.onChange = onChange
         self.onDelete = onDelete
@@ -403,7 +407,7 @@ class CartItemTableViewCell: UITableViewCell {
         }
         
         self.cartItem = item
-        onChange?()
+        onChange?(item)
     }
     
     @objc private func deleteButtonTapped() {
